@@ -1,5 +1,6 @@
 CC= sdcc
 ASM = sdas8051
+SDAR ?= sdar rc
 OBJCOPY = objcopy
 PACKIHX = packihx
 
@@ -15,7 +16,7 @@ PROC = mcs51
 FREQ_SYS ?= 24000000
 XRAM_SIZE ?= 0x1000
 XRAM_LOC ?= 0x0000
-CODE_SIZE ?= 0xf000 # 61440 байтов (оставляем оставшиеся 4096 для загрузчика)
+CODE_SIZE ?= 0xf000 # 61440 bytes (leaving the remaining 4096 for bootloader)
 
 SMK_VERSION ?= alpha
 
@@ -42,7 +43,6 @@ AFLAGS= -plosgff
 SOURCES := $(SRCDIR)/main.c $(filter-out $(SRCDIR)/main.c, $(wildcard $(SRCDIR)/*.c)) # main.c has to be the first file
 OBJECTS := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel)
 
-
 .PHONY: all clean flash
 
 all: $(BINDIR)/main.hex
@@ -57,10 +57,11 @@ $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/%.rel: $(SRCDIR)/%.asm
-	${ASM} ${AFLAGS} $@ $<
+$(BINDIR)/main.lib: $(LIB_OBJECTS)
+	@mkdir -p $(@D)
+	$(SDAR) $@ $^
 
-$(BINDIR)/main.ihx: $(OBJECTS) $(OBJDIR)/preboot.rel
+$(BINDIR)/main.ihx: $(MAIN_OBJECTS) $(BINDIR)/main.lib
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $^
 
